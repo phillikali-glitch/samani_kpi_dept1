@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPI Performance Dashboard - Samani Creations Ltd</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-gold: #b89356;
+            --dark-charcoal: #2d2d2d;
+            --light-gray: #f4f4f4;
+            --success-green: #28a745;
+            --warning-orange: #ff9800;
+            --info-blue: #2196f3;
+            --sales-blue: #1e88e5;
+            --pr-purple: #8e24aa;
+            --bd-green: #43a047;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+            color: var(--dark-charcoal);
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 25px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .logo {
+            height: 80px;
+        }
+
+        .title-section h1 {
+            margin: 0;
+            color: var(--dark-charcoal);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-size: 26px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            text-align: right;
+            margin: 8px 0 0 0;
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .dept-indicator {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 10px;
+        }
+
+        .dept-bd { background: var(--bd-green); color: white; }
+        .dept-sales { background: var(--sales-blue); color: white; }
+        .dept-pr { background: var(--pr-purple); color: white; }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-gold);
+        }
+
+        .meta-grid.bd { background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e9 100%); }
+        .meta-grid.sales { background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); }
+        .meta-grid.pr { background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 8px;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input, select, textarea {
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: #fff;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-gold);
+            box-shadow: 0 0 0 2px rgba(184, 147, 86, 0.1);
+        }
+
+        .actual-input {
+            width: 100%;
+            max-width: 150px;
+            padding: 8px 10px;
+            text-align: right;
+            font-weight: 600;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .actual-input:focus {
+            border-color: var(--primary-gold);
+            background-color: #fffdf9;
+        }
+
+        .kpi-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 40px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .kpi-table th {
+            background-color: var(--dark-charcoal);
+            color: white;
+            padding: 16px 20px;
+            text-align: left;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-table th:first-child {
+            width: 40%;
+        }
+
+        .kpi-table td {
+            padding: 16px 20px;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s;
+        }
+
+        .kpi-table tr:hover td {
+            background-color: #f9f9f9;
+        }
+
+        .target-val {
+            background: #f8f8f8;
+            font-weight: 700;
+            color: #333;
+            border-left: 3px solid var(--info-blue);
+            padding-left: 15px;
+        }
+
+        .score-pct {
+            font-weight: 700;
+            font-size: 15px;
+            min-width: 80px;
+            display: inline-block;
+        }
+
+        .score-excellent { color: var(--success-green); }
+        .score-good { color: #4caf50; }
+        .score-average { color: #ff9800; }
+        .score-poor { color: #f44336; }
+
+        .narrative-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .narrative-section textarea {
+            height: 120px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        .summary-section {
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid var(--primary-gold);
+        }
+
+        .summary-section.bd { background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e9 100%); }
+        .summary-section.sales { background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); }
+        .summary-section.pr { background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            text-align: center;
+        }
+
+        .summary-item h3 {
+            margin: 0 0 10px 0;
+            color: #666;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .summary-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--dark-charcoal);
+        }
+
+        .performance-rating {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 10px;
+        }
+
+        .rating-excellent { background: #d4edda; color: #155724; }
+        .rating-good { background: #d1ecf1; color: #0c5460; }
+        .rating-average { background: #fff3cd; color: #856404; }
+        .rating-poor { background: #f8d7da; color: #721c24; }
+
+        .weight-indicator {
+            font-size: 11px;
+            color: #666;
+            font-weight: normal;
+            margin-left: 5px;
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        button {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-calc { 
+            background: var(--dark-charcoal); 
+            color: white; 
+        }
+        .btn-calc:hover { 
+            background: #404040;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .btn-pdf { 
+            background: #d9534f; 
+            color: white; 
+        }
+        .btn-pdf:hover { 
+            background: #c9302c;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(217, 83, 79, 0.2);
+        }
+        
+        .btn-excel { 
+            background: #1f7244; 
+            color: white; 
+        }
+        .btn-excel:hover { 
+            background: #186135;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(31, 114, 68, 0.2);
+        }
+
+        .btn-reset { 
+            background: #6c757d; 
+            color: white; 
+            margin-right: auto;
+        }
+        .btn-reset:hover { 
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .conversion-note {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+            margin-top: 5px;
+        }
+
+        .input-help {
+            font-size: 11px;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .department-section {
+            display: none;
+        }
+
+        .department-section.active {
+            display: block;
+        }
+
+        .dept-header {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--dark-charcoal);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid;
+        }
+
+        .dept-header.bd { border-color: var(--bd-green); color: var(--bd-green); }
+        .dept-header.sales { border-color: var(--sales-blue); color: var(--sales-blue); }
+        .dept-header.pr { border-color: var(--pr-purple); color: var(--pr-purple); }
+
+        @media print {
+            .action-buttons, .btn-reset { display: none; }
+            .dashboard-container { 
+                box-shadow: none;
+                padding: 20px;
+            }
+            .actual-input {
+                border: none;
+                background: transparent;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .meta-grid, .summary-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .narrative-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .meta-grid, .summary-grid {
+                grid-template-columns: 1fr;
+            }
+            .dashboard-container {
+                padding: 20px;
+            }
+            .kpi-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container" id="kpi-content">
+    <div class="header">
+        <img src="https://i.ibb.co/H1wL4ph/official-samani-logo.png" alt="Samani Creations" class="logo">
+        <div class="title-section">
+            <h1>Performance Metrics Dashboard</h1>
+            <p class="subtitle">Strategic Business Performance Portal</p>
+        </div>
+    </div>
+
+    <div class="meta-grid bd" id="metaGrid">
+        <div class="input-group">
+            <label>STAFF NAME</label>
+            <input type="text" id="staffName" placeholder="Enter Full Name">
+        </div>
+        <div class="input-group">
+            <label>REPORTING MONTH</label>
+            <input type="text" id="reportingMonth" placeholder="e.g., March 2026" value="March 2026">
+            <div class="input-help">Format: Month Year</div>
+        </div>
+        <div class="input-group">
+            <label>DEPARTMENT</label>
+            <select id="department" onchange="changeDepartment()">
+                <option value="bd">Business Development</option>
+                <option value="sales">Sales</option>
+                <option value="pr">Public Relations</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>SUBMISSION DATE</label>
+            <input type="text" id="autoDate" readonly>
+        </div>
+    </div>
+
+    <!-- Business Development Department KPIs -->
+    <div id="bdSection" class="department-section active">
+        <h3 class="dept-header bd">Business Development KPIs</h3>
+        <table class="kpi-table">
+            <thead>
+                <tr>
+                    <th>Key Performance Indicator (KPI)</th>
+                    <th>Target</th>
+                    <th>Actual Achievement</th>
+                    <th>Score % <span class="weight-indicator">Weight</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Monthly Sales Revenue (UGX)</td>
+                    <td class="target-val">300,000,000</td>
+                    <td>
+                        <input type="number" class="actual-input" data-weight="25" id="bdSalesActual" min="0" step="1000000">
+                        <div class="conversion-note">Target: UGX 300M</div>
+                    </td>
+                    <td>
+                        <span class="score-pct" id="bdSalesPct">0%</span>
+                        <span class="weight-indicator">25%</span>
+                        <div class="conversion-note" id="bdSalesNote"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>New Projects (> 20M UGX)</td>
+                    <td class="target-val">5</td>
+                    <td>
+                        <input type="number" class="actual-input" data-weight="20" id="bdProjectsActual" min="0" step="1">
+                        <div class="conversion-note">Target: 5 projects</div>
+                    </td>
+                    <td>
+                        <span class="score-pct" id="bdProjectsPct">0%</span>
+                        <span class="weight-indicator">20%</span>
+                        <div class="conversion-note" id="bdProjectsNote"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Quotes/Tender Submitted</td>
+                    <td class="target-val">50</td>
+                    <td>
+                        <input type="number" class="actual-input" data-weight="10" id="bdQuotesActual" min="0" step="1">
+                        <div class="conversion-note">Target: 50 submissions</div>
+                    </td>
+                    <td>
+                        <span class="score-pct" id="bdQuotesPct">0%</span>
+                        <span class="weight-indicator">10%</span>
+                        <div class="conversion-note" id="bdQuotesNote"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Proposal Conversion Rate (%)</td>
+                    <td class="target-val">100%</td>
+                    <td>
+                        <input type="text" id="bdConvActualDisplay" readonly style="border:none;background:transparent;font-weight:600;">
+                        <div class="conversion-note">Calculated: (New Projects ÷ Quotes) × 100</div>
+                    </td>
+                    <td>
+                        <span class="score-pct" id="bdConvPct">0%</span>
+                        <span class="weight-indicator">25%</span>
+                        <div class="conversion-note" id="bdConvNote"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Monthly New Leads Count</td>
+                    <td class="target-val">280</td>
+                    <td>
+                        <input type="number" class="actual-input" data-weight="5" id="bdLeadsActual" min="0" step="1">
+                    </td>
+                    <td>
+                        <span class="score-pct" id="bdLeadsPct">0%</span>
+                        <span class="weight-indicator">5%</span>
+                        <div class="conversion-note" id="bdLeadsNote"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Showroom Sales (UGX)</td>
+                    <td class="target-val">80,000,000</td>
+                    <td>
+                        <input type="number" class="actual-input" data-weight="10" id="bdShowroomActual" min="0" step="1000000">
+                    </td>
+                    <td>
+                        <span class="score-pct" id="bdShowroomPct">0%</span>
+                        <span class="weight-indicator">10%</span>
+                        <div class="conversion-note" id="bdShowroomNote"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Partnerships Secured (Architects/Corp)</td>
+                    <td class="target-val">5</td>
+                    <td>
+                        <input type="number" class="actual-input" data-weight="5" id="bdPartnerActual" min="0" step="1">
+                        <div class="conversion-note">Target: 5 partnerships</div>
+                    </td>
+                    <td>
+                        <span class="score-pct" id="bdPartnerPct">0%</span>
+                        <span class="weight-indicator">5%</span>
+                        <div class="conversion-note" id="bdPartnerNote"></div>
+                    </td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr style="background: linear-gradient(135deg, #f0f0f0 0%, #e8e8e8 100%); font-weight: bold;">
+                    <td colspan="3" style="text-align: right; padding-right: 30px; font-size: 16px;">
+                        OVERALL PERFORMANCE SCORE:
+                        <span id="bdPerformanceRating" class="performance-rating rating-poor">N/A</span>
+                    </td>
+                    <td id="bdTotalScore" style="font-size: 28px; padding: 15px 20px;">0%</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <!-- Sales Department KPIs -->
+    <div id="salesSection" class="department-section">
+        <h3 class="dept-header sales">Sales Department KPIs</h3>
+        <table class="kpi-table">
+            <thead>
+                <tr>
+                    <th>Key Performance Indicator (KPI)</th>
+                    <th>Target</th>
+                    <th>Actual Achievement</th>
+                    <th>Score % <span class="weight-indicator">Weight</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Showroom Sales Achieved</td>
+                    <td class="target-val">20</td>
+                    <td>
+                        <input type="number" class="actual-input" data-weight="25" id="salesShowroomSales" min="0" step="1">
+                        <div class="conversion-note">Target: 20 sales</div>
+                    </td>
+                    <td>
+                        <span class="score-pct" id="salesShowroomSalesPct">0%</span>
+                        <span class="weight-indicator">25%</span>
+                        <div class="conversion-note" id="salesShowroomSalesNote"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Project Sales Achieved (> UGX 20M)</td>
+                    <td class="target-val">2</td>
+                    <td>
+                        <input type="number" class="actual-input" data-weight="20" id="salesProjectSales" min="0" step="1">
+                        <div class="conversion-note">Target: 2 projects</div>
+                    </td>
+                    <td>
+                        <span class="score-pct" id="salesProjectSalesPct">0%</span>
+                        <span class="weight-indicator">20%</span>
+                        <div class="conversion-note" id="salesProjectSalesNote"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Leads Generated</td>
+                    <td class="target-val">80</td>
+                    <td>
+                        <input type="number" class="actual-input" data-weight="10" id="salesLeadsGenerated" min="0" step="1">
+                        <div class="conversion-note">Target: 80 leads</div>
+                    </td>
+                    <td>
+                        <span class="score-pct" id="salesLeadsGeneratedPct">0%</span>
+                        <span class="weight-indicator">10%</span>
+                        <div class="conversion-note" id="salesLeadsGeneratedNote"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Showroom Walk-ins</td>
+                    <td class="target-val">50</td>
+                    <td>
+                        <input type="number" class="actual-input" data-weight="10" id="salesWalkins" min="0" step="1">
+                        <div class="conversion-note">Target: 50 walk-ins</div>
+                    </td>
+                    <td>
+                        <span class="score-pct" id="salesWalkinsPct">0%</span>
+                        <span class="weight-indicator">10%</span>
+                        <div class="conversion-note" id="salesWalkinsNote"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Showroom Conversion Rate (%)</td>
+                    <td class="target-val">100%</td>
+                    <td>
+                        <input type="text" id="salesConversionDisplay" readonly style="border:none;background:transparent;font-weight:600;">
+                        <div class="conversion-note">Calculated: (Showroom Sales ÷ Walk-ins) × 100</div>
+                    </td>
+                    <td>
+                        <span class="score-pct" id="salesConversionPct">0%</span>
+                        <span class="weight-indicator">20%</span>
+                        <div class="conversion-note" id="salesConversionNote"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Quotations/Tender Issued</td>
+                    <td class="target-val">20</td>
+                    <td>
+                        <input type="number" class="actual-input" data-weight="15" id="salesQuotations" min="0" step="1">
+                        <div class="conversion-note">Target: 20 quotations</div>
+                    </td>
+                    <td>
+                        <span class="score-pct" id="salesQuotationsPct">0%</span>
+                        <span class="weight-indicator">15%</span>
+                        <div class="conversion-note" id="salesQuotationsNote"></div>
+                    </td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr style="background: linear-gradient(135deg, #f0f0f0 0%, #e8e8e8 100%); font-weight: bold;">
+                    <td colspan="3" style="text-align: right; padding-right: 30px; font-size: 16px;">
+                        OVERALL PERFORMANCE SCORE:
+                        <span id="salesPerformanceRating" class="performance-rating rating-poor">N/A</span>
+                    </td>
+                    <td id="salesTotalScore" style="font-size: 28px; padding: 15px 20px;">0%</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <!-- Public Relations Department KPIs -->
+    <div id="prSection" class="department-section">
+        <h3 class="dept-header pr">Public Relations Department KPIs</h3>
+        <table class="kpi-table">
+            <thead>
+                <tr>
+                    <th>Key Performance Indicator (KPI)</th>
+                    <th>Target</th>
+                    <th>Actual Achievement</th>
+                    <th>Score % <span class="weight-indicator">Weight</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Brand Visibility (Likes/Engagement)</td>
+                    <td class="target-val">15,000</td>
+                    <td>
+                        <input type="number" class="actual-input" data-weight="20" id="prBrandVisibility" min="0" step="100">
+                        <div class="conversion-note">Target: 15,000 likes</div>
+                    </td>
+                    <td>
+                        <span class="score-pct" id="prBrandVisibilityPct">0%</span>
+                        <span class="weight-indicator">20%</span>
+                        <div class="conversion-note" id="prBrandVisibilityNote"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Digital Marketing (Active Accounts)</td>
+                    <td class="target-val">5</td>
+                    <td>
+                        <input type="number" class="actual-input" data-weight="10" id="prDigitalMarketing" min="0" max="5" step="1">
+                        <div class="conversion-note">Target: 5 active accounts</div>
+                    </td>
+                    <td>
+                        <span class="score-pct" id="prDigitalMarketingPct">0%</span>
+                        <span class="weight-indicator">10%</span>
+                        <div class="conversion-note" id="prDigitalMarketingNote"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Online Sales Achieved</td>
+                    <td class="target-val">30</td>
+                    <td>
+                        <input type="number" class="actual-input" data-weight="25" id="prOnlineSales" min="0" step="1">
+                        <div class="conversion-note">Target: 30 online sales</div>
+                    </td>
+                    <td>
+                        <span class="score-pct" id="prOnlineSalesPct">0%</span>
+                        <span class="weight-indicator">25%</span>
+                        <div class="conversion-note" id="prOnlineSalesNote"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Showroom Walk-ins</td>
+                    <td class="target-val">100</td>
+                    <td>
+                        <input type="number" class="actual-input" data-weight="15" id="prWalkins" min="0" step="1">
+                        <div class="conversion-note">Target: 100 walk-ins</div>
+                    </td>
+                    <td>
+                        <span class="score-pct" id="prWalkinsPct">0%</span>
+                        <span class="weight-indicator">15%</span>
+                        <div class="conversion-note" id="prWalkinsNote"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Administrative Tasks Completed</td>
+                    <td class="target-val">15</td>
+                    <td>
+                        <input type="number" class="actual-input" data-weight="15" id="prAdminTasks" min="0" step="1">
+                        <div class="conversion-note">Target: 15 tasks</div>
+                    </td>
+                    <td>
+                        <span class="score-pct" id="prAdminTasksPct">0%</span>
+                        <span class="weight-indicator">15%</span>
+                        <div class="conversion-note" id="prAdminTasksNote"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Social Media Posts</td>
+                    <td class="target-val">50</td>
+                    <td>
+                        <input type="number" class="actual-input" data-weight="10" id="prSocialMediaPosts" min="0" step="1">
+                        <div class="conversion-note">Target: 50 posts</div>
+                    </td>
+                    <td>
+                        <span class="score-pct" id="prSocialMediaPostsPct">0%</span>
+                        <span class="weight-indicator">10%</span>
+                        <div class="conversion-note" id="prSocialMediaPostsNote"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Boosts, Ads & Promotions</td>
+                    <td class="target-val">5</td>
+                    <td>
+                        <input type="number" class="actual-input" data-weight="5" id="prBoostsAds" min="0" step="1">
+                        <div class="conversion-note">Target: 5 campaigns</div>
+                    </td>
+                    <td>
+                        <span class="score-pct" id="prBoostsAdsPct">0%</span>
+                        <span class="weight-indicator">5%</span>
+                        <div class="conversion-note" id="prBoostsAdsNote"></div>
+                    </td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr style="background: linear-gradient(135deg, #f0f0f0 0%, #e8e8e8 100%); font-weight: bold;">
+                    <td colspan="3" style="text-align: right; padding-right: 30px; font-size: 16px;">
+                        OVERALL PERFORMANCE SCORE:
+                        <span id="prPerformanceRating" class="performance-rating rating-poor">N/A</span>
+                    </td>
+                    <td id="prTotalScore" style="font-size: 28px; padding: 15px 20px;">0%</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <!-- Summary Section (Dynamic per department) -->
+    <div id="bdSummary" class="summary-section bd department-section active">
+        <h3 style="margin-top: 0; color: var(--bd-green);">BUSINESS DEVELOPMENT PERFORMANCE SUMMARY</h3>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <h3>Revenue Performance</h3>
+                <div class="summary-value" id="bdSummaryRevenue">UGX 0</div>
+            </div>
+            <div class="summary-item">
+                <h3>Conversion Rate</h3>
+                <div class="summary-value" id="bdSummaryConversion">0%</div>
+            </div>
+            <div class="summary-item">
+                <h3>Target Achievement</h3>
+                <div class="summary-value" id="bdSummaryTargets">0/7</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="salesSummary" class="summary-section sales department-section">
+        <h3 style="margin-top: 0; color: var(--sales-blue);">SALES DEPARTMENT PERFORMANCE SUMMARY</h3>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <h3>Showroom Sales</h3>
+                <div class="summary-value" id="salesSummaryShowroom">0</div>
+            </div>
+            <div class="summary-item">
+                <h3>Conversion Rate</h3>
+                <div class="summary-value" id="salesSummaryConversion">0%</div>
+            </div>
+            <div class="summary-item">
+                <h3>Target Achievement</h3>
+                <div class="summary-value" id="salesSummaryTargets">0/6</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="prSummary" class="summary-section pr department-section">
+        <h3 style="margin-top: 0; color: var(--pr-purple);">PUBLIC RELATIONS PERFORMANCE SUMMARY</h3>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <h3>Brand Visibility</h3>
+                <div class="summary-value" id="prSummaryVisibility">0</div>
+            </div>
+            <div class="summary-item">
+                <h3>Online Sales</h3>
+                <div class="summary-value" id="prSummaryOnlineSales">0</div>
+            </div>
+            <div class="summary-item">
+                <h3>Target Achievement</h3>
+                <div class="summary-value" id="prSummaryTargets">0/7</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="narrative-section">
+        <div class="input-group">
+            <label>KEY ACHIEVEMENTS & MILESTONES</label>
+            <textarea id="achievements" placeholder="Describe successful initiatives, strategic partnerships, significant achievements, process improvements..."></textarea>
+        </div>
+        <div class="input-group">
+            <label>CHALLENGES, RISKS & MITIGATION</label>
+            <textarea id="challenges" placeholder="Document market challenges, operational constraints, resource limitations, and proposed solutions..."></textarea>
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn-reset" onclick="resetDashboard()">
+            <span>⟳</span> Reset All
+        </button>
+        <button class="btn-calc" onclick="calculateAllScores()">
+            <span>✓</span> Update Dashboard
+        </button>
+        <button class="btn-excel" onclick="exportToExcel()">
+            <span>📊</span> Export to Excel
+        </button>
+        <button class="btn-pdf" onclick="exportToPDF()">
+            <span>📄</span> Export to PDF
+        </button>
+    </div>
+</div>
+
+<script>
+    // Initialize date
+    document.getElementById('autoDate').value = new Date().toLocaleDateString('en-GB', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+
+    // Department change function
+    function changeDepartment() {
+        const dept = document.getElementById('department').value;
+        
+        // Hide all sections
+        document.querySelectorAll('.department-section').forEach(section => {
+            section.classList.remove('active');
+        });
+        
+        // Show selected department
+        document.getElementById(`${dept}Section`).classList.add('active');
+        document.getElementById(`${dept}Summary`).classList.add('active');
+        
+        // Change meta grid background
+        const metaGrid = document.getElementById('metaGrid');
+        metaGrid.className = `meta-grid ${dept}`;
+        
+        // Recalculate scores for the active department
+        calculateAllScores();
+    }
+
+    // Add event listeners for auto-calculation
+    function setupEventListeners() {
+        // Business Development inputs
+        const bdInputs = document.querySelectorAll('#bdSection .actual-input');
+        bdInputs.forEach(input => {
+            input.addEventListener('input', calculateBDScores);
+            input.addEventListener('change', calculateBDScores);
+        });
+        
+        // Sales inputs
+        const salesInputs = document.querySelectorAll('#salesSection .actual-input');
+        salesInputs.forEach(input => {
+            input.addEventListener('input', calculateSalesScores);
+            input.addEventListener('change', calculateSalesScores);
+        });
+        
+        // PR inputs
+        const prInputs = document.querySelectorAll('#prSection .actual-input');
+        prInputs.forEach(input => {
+            input.addEventListener('input', calculatePRScores);
+            input.addEventListener('change', calculatePRScores);
+        });
+    }
+
+    // Business Development Scoring
+    function calculateBDScores() {
+        let totalWeightedScore = 0;
+        let totalWeight = 0;
+        let targetsAchieved = 0;
+        
+        // Sales Revenue (Weight: 25%) - Cap at 150%
+        const salesTarget = 300000000;
+        const salesActual = parseFloat(document.getElementById('bdSalesActual').value) || 0;
+        let salesPct = (salesActual / salesTarget) * 100;
+        salesPct = Math.min(salesPct, 150);
+        const salesWeight = 0.25;
+        document.getElementById('bdSalesPct').textContent = salesPct.toFixed(1) + '%';
+        document.getElementById('bdSalesPct').className = 'score-pct ' + getScoreClass(salesPct);
+        document.getElementById('bdSalesNote').textContent = formatCurrency(salesActual);
+        totalWeightedScore += salesPct * salesWeight;
+        totalWeight += salesWeight;
+        if (salesPct >= 100) targetsAchieved++;
+        
+        // New Projects (Weight: 20%) - Cap at 150%
+        const projectsTarget = 5;
+        const projectsActual = parseFloat(document.getElementById('bdProjectsActual').value) || 0;
+        let projectsPct = (projectsActual / projectsTarget) * 100;
+        projectsPct = Math.min(projectsPct, 150);
+        const projectsWeight = 0.20;
+        document.getElementById('bdProjectsPct').textContent = projectsPct.toFixed(1) + '%';
+        document.getElementById('bdProjectsPct').className = 'score-pct ' + getScoreClass(projectsPct);
+        document.getElementById('bdProjectsNote').textContent = `${projectsActual} projects`;
+        totalWeightedScore += projectsPct * projectsWeight;
+        totalWeight += projectsWeight;
+        if (projectsPct >= 100) targetsAchieved++;
+        
+        // Quotes/Tender Submitted (Weight: 10%) - Cap at 150%
+        const quotesTarget = 50;
+        const quotesActual = parseFloat(document.getElementById('bdQuotesActual').value) || 0;
+        let quotesPct = (quotesActual / quotesTarget) * 100;
+        quotesPct = Math.min(quotesPct, 150);
+        const quotesWeight = 0.10;
+        document.getElementById('bdQuotesPct').textContent = quotesPct.toFixed(1) + '%';
+        document.getElementById('bdQuotesPct').className = 'score-pct ' + getScoreClass(quotesPct);
+        document.getElementById('bdQuotesNote').textContent = `${quotesActual} submissions`;
+        totalWeightedScore += quotesPct * quotesWeight;
+        totalWeight += quotesWeight;
+        if (quotesPct >= 100) targetsAchieved++;
+        
+        // Conversion Rate (Weight: 25%)
+        let conversionRate = 0;
+        if (quotesActual > 0) {
+            conversionRate = (projectsActual / quotesActual) * 100;
+        }
+        conversionRate = Math.min(conversionRate, 100);
+        document.getElementById('bdConvActualDisplay').value = conversionRate.toFixed(1) + '%';
+        const conversionPct = conversionRate;
+        const conversionWeight = 0.25;
+        document.getElementById('bdConvPct').textContent = conversionPct.toFixed(1) + '%';
+        document.getElementById('bdConvPct').className = 'score-pct ' + getScoreClass(conversionPct);
+        document.getElementById('bdConvNote').textContent = `${conversionRate.toFixed(1)}% actual`;
+        totalWeightedScore += conversionPct * conversionWeight;
+        totalWeight += conversionWeight;
+        if (conversionPct >= 100) targetsAchieved++;
+        
+        // New Leads (Weight: 5%) - Cap at 150%
+        const leadsTarget = 280;
+        const leadsActual = parseFloat(document.getElementById('bdLeadsActual').value) || 0;
+        let leadsPct = (leadsActual / leadsTarget) * 100;
+        leadsPct = Math.min(leadsPct, 150);
+        const leadsWeight = 0.05;
+        document.getElementById('bdLeadsPct').textContent = leadsPct.toFixed(1) + '%';
+        document.getElementById('bdLeadsPct').className = 'score-pct ' + getScoreClass(leadsPct);
+        document.getElementById('bdLeadsNote').textContent = `${leadsActual} leads`;
+        totalWeightedScore += leadsPct * leadsWeight;
+        totalWeight += leadsWeight;
+        if (leadsPct >= 100) targetsAchieved++;
+        
+        // Showroom Sales (Weight: 10%) - Cap at 150%
+        const showroomTarget = 80000000;
+        const showroomActual = parseFloat(document.getElementById('bdShowroomActual').value) || 0;
+        let showroomPct = (showroomActual / showroomTarget) * 100;
+        showroomPct = Math.min(showroomPct, 150);
+        const showroomWeight = 0.10;
+        document.getElementById('bdShowroomPct').textContent = showroomPct.toFixed(1) + '%';
+        document.getElementById('bdShowroomPct').className = 'score-pct ' + getScoreClass(showroomPct);
+        document.getElementById('bdShowroomNote').textContent = formatCurrency(showroomActual);
+        totalWeightedScore += showroomPct * showroomWeight;
+        totalWeight += showroomWeight;
+        if (showroomPct >= 100) targetsAchieved++;
+        
+        // Partnerships (Weight: 5%) - Cap at 150%
+        const partnerTarget = 5;
+        const partnerActual = parseFloat(document.getElementById('bdPartnerActual').value) || 0;
+        let partnerPct = (partnerActual / partnerTarget) * 100;
+        partnerPct = Math.min(partnerPct, 150);
+        const partnerWeight = 0.05;
+        document.getElementById('bdPartnerPct').textContent = partnerPct.toFixed(1) + '%';
+        document.getElementById('bdPartnerPct').className = 'score-pct ' + getScoreClass(partnerPct);
+        document.getElementById('bdPartnerNote').textContent = `${partnerActual} partnerships`;
+        totalWeightedScore += partnerPct * partnerWeight;
+        totalWeight += partnerWeight;
+        if (partnerPct >= 100) targetsAchieved++;
+        
+        // Calculate overall weighted score
+        const overallScore = totalWeightedScore;
+        const totalScoreElement = document.getElementById('bdTotalScore');
+        totalScoreElement.textContent = overallScore.toFixed(1) + '%';
+        
+        // Set performance rating
+        const ratingElement = document.getElementById('bdPerformanceRating');
+        const {ratingText, ratingClass} = getPerformanceRating(overallScore);
+        ratingElement.textContent = ratingText;
+        ratingElement.className = 'performance-rating ' + ratingClass;
+        totalScoreElement.style.color = getScoreColor(overallScore);
+        
+        // Update summary section
+        document.getElementById('bdSummaryRevenue').textContent = formatCurrency(salesActual);
+        document.getElementById('bdSummaryConversion').textContent = conversionRate.toFixed(1) + '%';
+        document.getElementById('bdSummaryTargets').textContent = `${targetsAchieved}/7`;
+    }
+
+    // Sales Department Scoring
+    function calculateSalesScores() {
+        let totalWeightedScore = 0;
+        let totalWeight = 0;
+        let targetsAchieved = 0;
+        
+        // Showroom Sales Achieved (Weight: 25%) - Cap at 150%
+        const showroomSalesTarget = 20;
+        const showroomSalesActual = parseFloat(document.getElementById('salesShowroomSales').value) || 0;
+        let showroomSalesPct = (showroomSalesActual / showroomSalesTarget) * 100;
+        showroomSalesPct = Math.min(showroomSalesPct, 150);
+        const showroomSalesWeight = 0.25;
+        document.getElementById('salesShowroomSalesPct').textContent = showroomSalesPct.toFixed(1) + '%';
+        document.getElementById('salesShowroomSalesPct').className = 'score-pct ' + getScoreClass(showroomSalesPct);
+        document.getElementById('salesShowroomSalesNote').textContent = `${showroomSalesActual} sales`;
+        totalWeightedScore += showroomSalesPct * showroomSalesWeight;
+        totalWeight += showroomSalesWeight;
+        if (showroomSalesPct >= 100) targetsAchieved++;
+        
+        // Project Sales Achieved (Weight: 20%) - Cap at 150%
+        const projectSalesTarget = 2;
+        const projectSalesActual = parseFloat(document.getElementById('salesProjectSales').value) || 0;
+        let projectSalesPct = (projectSalesActual / projectSalesTarget) * 100;
+        projectSalesPct = Math.min(projectSalesPct, 150);
+        const projectSalesWeight = 0.20;
+        document.getElementById('salesProjectSalesPct').textContent = projectSalesPct.toFixed(1) + '%';
+        document.getElementById('salesProjectSalesPct').className = 'score-pct ' + getScoreClass(projectSalesPct);
+        document.getElementById('salesProjectSalesNote').textContent = `${projectSalesActual} projects`;
+        totalWeightedScore += projectSalesPct * projectSalesWeight;
+        totalWeight += projectSalesWeight;
+        if (projectSalesPct >= 100) targetsAchieved++;
+        
+        // Leads Generated (Weight: 10%) - Cap at 150%
+        const leadsTarget = 80;
+        const leadsActual = parseFloat(document.getElementById('salesLeadsGenerated').value) || 0;
+        let leadsPct = (leadsActual / leadsTarget) * 100;
+        leadsPct = Math.min(leadsPct, 150);
+        const leadsWeight = 0.10;
+        document.getElementById('salesLeadsGeneratedPct').textContent = leadsPct.toFixed(1) + '%';
+        document.getElementById('salesLeadsGeneratedPct').className = 'score-pct ' + getScoreClass(leadsPct);
+        document.getElementById('salesLeadsGeneratedNote').textContent = `${leadsActual} leads`;
+        totalWeightedScore += leadsPct * leadsWeight;
+        totalWeight += leadsWeight;
+        if (leadsPct >= 100) targetsAchieved++;
+        
+        // Showroom Walk-ins (Weight: 10%) - Cap at 150%
+        const walkinsTarget = 50;
+        const walkinsActual = parseFloat(document.getElementById('salesWalkins').value) || 0;
+        let walkinsPct = (walkinsActual / walkinsTarget) * 100;
+        walkinsPct = Math.min(walkinsPct, 150);
+        const walkinsWeight = 0.10;
+        document.getElementById('salesWalkinsPct').textContent = walkinsPct.toFixed(1) + '%';
+        document.getElementById('salesWalkinsPct').className = 'score-pct ' + getScoreClass(walkinsPct);
+        document.getElementById('salesWalkinsNote').textContent = `${walkinsActual} walk-ins`;
+        totalWeightedScore += walkinsPct * walkinsWeight;
+        totalWeight += walkinsWeight;
+        if (walkinsPct >= 100) targetsAchieved++;
+        
+        // Showroom Conversion Rate (Weight: 20%)
+        let conversionRate = 0;
+        if (walkinsActual > 0) {
+            conversionRate = (showroomSalesActual / walkinsActual) * 100;
+        }
+        conversionRate = Math.min(conversionRate, 100);
+        document.getElementById('salesConversionDisplay').value = conversionRate.toFixed(1) + '%';
+        const conversionPct = conversionRate;
+        const conversionWeight = 0.20;
+        document.getElementById('salesConversionPct').textContent = conversionPct.toFixed(1) + '%';
+        document.getElementById('salesConversionPct').className = 'score-pct ' + getScoreClass(conversionPct);
+        document.getElementById('salesConversionNote').textContent = `${conversionRate.toFixed(1)}% actual`;
+        totalWeightedScore += conversionPct * conversionWeight;
+        totalWeight += conversionWeight;
+        if (conversionPct >= 100) targetsAchieved++;
+        
+        // Quotations/Tender Issued (Weight: 15%) - Cap at 150%
+        const quotationsTarget = 20;
+        const quotationsActual = parseFloat(document.getElementById('salesQuotations').value) || 0;
+        let quotationsPct = (quotationsActual / quotationsTarget) * 100;
+        quotationsPct = Math.min(quotationsPct, 150);
+        const quotationsWeight = 0.15;
+        document.getElementById('salesQuotationsPct').textContent = quotationsPct.toFixed(1) + '%';
+        document.getElementById('salesQuotationsPct').className = 'score-pct ' + getScoreClass(quotationsPct);
+        document.getElementById('salesQuotationsNote').textContent = `${quotationsActual} quotations`;
+        totalWeightedScore += quotationsPct * quotationsWeight;
+        totalWeight += quotationsWeight;
+        if (quotationsPct >= 100) targetsAchieved++;
+        
+        // Calculate overall weighted score
+        const overallScore = totalWeightedScore;
+        const totalScoreElement = document.getElementById('salesTotalScore');
+        totalScoreElement.textContent = overallScore.toFixed(1) + '%';
+        
+        // Set performance rating
+        const ratingElement = document.getElementById('salesPerformanceRating');
+        const {ratingText, ratingClass} = getPerformanceRating(overallScore);
+        ratingElement.textContent = ratingText;
+        ratingElement.className = 'performance-rating ' + ratingClass;
+        totalScoreElement.style.color = getScoreColor(overallScore);
+        
+        // Update summary section
+        document.getElementById('salesSummaryShowroom').textContent = showroomSalesActual;
+        document.getElementById('salesSummaryConversion').textContent = conversionRate.toFixed(1) + '%';
+        document.getElementById('salesSummaryTargets').textContent = `${targetsAchieved}/6`;
+    }
+
+    // Public Relations Scoring
+    function calculatePRScores() {
+        let totalWeightedScore = 0;
+        let totalWeight = 0;
+        let targetsAchieved = 0;
+        
+        // Brand Visibility (Weight: 20%) - Cap at 150%
+        const visibilityTarget = 15000;
+        const visibilityActual = parseFloat(document.getElementById('prBrandVisibility').value) || 0;
+        let visibilityPct = (visibilityActual / visibilityTarget) * 100;
+        visibilityPct = Math.min(visibilityPct, 150);
+        const visibilityWeight = 0.20;
+        document.getElementById('prBrandVisibilityPct').textContent = visibilityPct.toFixed(1) + '%';
+        document.getElementById('prBrandVisibilityPct').className = 'score-pct ' + getScoreClass(visibilityPct);
+        document.getElementById('prBrandVisibilityNote').textContent = `${visibilityActual.toLocaleString()} likes`;
+        totalWeightedScore += visibilityPct * visibilityWeight;
+        totalWeight += visibilityWeight;
+        if (visibilityPct >= 100) targetsAchieved++;
+        
+        // Digital Marketing (Weight: 10%) - Cap at 100% (max 5 accounts)
+        const digitalTarget = 5;
+        const digitalActual = parseFloat(document.getElementById('prDigitalMarketing').value) || 0;
+        let digitalPct = (digitalActual / digitalTarget) * 100;
+        digitalPct = Math.min(digitalPct, 100);
+        const digitalWeight = 0.10;
+        document.getElementById('prDigitalMarketingPct').textContent = digitalPct.toFixed(1) + '%';
+        document.getElementById('prDigitalMarketingPct').className = 'score-pct ' + getScoreClass(digitalPct);
+        document.getElementById('prDigitalMarketingNote').textContent = `${digitalActual} active accounts`;
+        totalWeightedScore += digitalPct * digitalWeight;
+        totalWeight += digitalWeight;
+        if (digitalPct >= 100) targetsAchieved++;
+        
+        // Online Sales Achieved (Weight: 25%) - Cap at 150%
+        const onlineSalesTarget = 30;
+        const onlineSalesActual = parseFloat(document.getElementById('prOnlineSales').value) || 0;
+        let onlineSalesPct = (onlineSalesActual / onlineSalesTarget) * 100;
+        onlineSalesPct = Math.min(onlineSalesPct, 150);
+        const onlineSalesWeight = 0.25;
+        document.getElementById('prOnlineSalesPct').textContent = onlineSalesPct.toFixed(1) + '%';
+        document.getElementById('prOnlineSalesPct').className = 'score-pct ' + getScoreClass(onlineSalesPct);
+        document.getElementById('prOnlineSalesNote').textContent = `${onlineSalesActual} online sales`;
+        totalWeightedScore += onlineSalesPct * onlineSalesWeight;
+        totalWeight += onlineSalesWeight;
+        if (onlineSalesPct >= 100) targetsAchieved++;
+        
+        // Showroom Walk-ins (Weight: 15%) - Cap at 150%
+        const walkinsTarget = 100;
+        const walkinsActual = parseFloat(document.getElementById('prWalkins').value) || 0;
+        let walkinsPct = (walkinsActual / walkinsTarget) * 100;
+        walkinsPct = Math.min(walkinsPct, 150);
+        const walkinsWeight = 0.15;
+        document.getElementById('prWalkinsPct').textContent = walkinsPct.toFixed(1) + '%';
+        document.getElementById('prWalkinsPct').className = 'score-pct ' + getScoreClass(walkinsPct);
+        document.getElementById('prWalkinsNote').textContent = `${walkinsActual} walk-ins`;
+        totalWeightedScore += walkinsPct * walkinsWeight;
+        totalWeight += walkinsWeight;
+        if (walkinsPct >= 100) targetsAchieved++;
+        
+        // Administrative Tasks (Weight: 15%) - Cap at 150%
+        const adminTarget = 15;
+        const adminActual = parseFloat(document.getElementById('prAdminTasks').value) || 0;
+        let adminPct = (adminActual / adminTarget) * 100;
+        adminPct = Math.min(adminPct, 150);
+        const adminWeight = 0.15;
+        document.getElementById('prAdminTasksPct').textContent = adminPct.toFixed(1) + '%';
+        document.getElementById('prAdminTasksPct').className = 'score-pct ' + getScoreClass(adminPct);
+        document.getElementById('prAdminTasksNote').textContent = `${adminActual} tasks completed`;
+        totalWeightedScore += adminPct * adminWeight;
+        totalWeight += adminWeight;
+        if (adminPct >= 100) targetsAchieved++;
+        
+        // Social Media Posts (Weight: 10%) - Cap at 150%
+        const postsTarget = 50;
+        const postsActual = parseFloat(document.getElementById('prSocialMediaPosts').value) || 0;
+        let postsPct = (postsActual / postsTarget) * 100;
+        postsPct = Math.min(postsPct, 150);
+        const postsWeight = 0.10;
+        document.getElementById('prSocialMediaPostsPct').textContent = postsPct.toFixed(1) + '%';
+        document.getElementById('prSocialMediaPostsPct').className = 'score-pct ' + getScoreClass(postsPct);
+        document.getElementById('prSocialMediaPostsNote').textContent = `${postsActual} posts`;
+        totalWeightedScore += postsPct * postsWeight;
+        totalWeight += postsWeight;
+        if (postsPct >= 100) targetsAchieved++;
+        
+        // Boosts, Ads & Promotions (Weight: 5%) - Cap at 150%
+        const boostsTarget = 5;
+        const boostsActual = parseFloat(document.getElementById('prBoostsAds').value) || 0;
+        let boostsPct = (boostsActual / boostsTarget) * 100;
+        boostsPct = Math.min(boostsPct, 150);
+        const boostsWeight = 0.05;
+        document.getElementById('prBoostsAdsPct').textContent = boostsPct.toFixed(1) + '%';
+        document.getElementById('prBoostsAdsPct').className = 'score-pct ' + getScoreClass(boostsPct);
+        document.getElementById('prBoostsAdsNote').textContent = `${boostsActual} campaigns`;
+        totalWeightedScore += boostsPct * boostsWeight;
+        totalWeight += boostsWeight;
+        if (boostsPct >= 100) targetsAchieved++;
+        
+        // Calculate overall weighted score
+        const overallScore = totalWeightedScore;
+        const totalScoreElement = document.getElementById('prTotalScore');
+        totalScoreElement.textContent = overallScore.toFixed(1) + '%';
+        
+        // Set performance rating
+        const ratingElement = document.getElementById('prPerformanceRating');
+        const {ratingText, ratingClass} = getPerformanceRating(overallScore);
+        ratingElement.textContent = ratingText;
+        ratingElement.className = 'performance-rating ' + ratingClass;
+        totalScoreElement.style.color = getScoreColor(overallScore);
+        
+        // Update summary section
+        document.getElementById('prSummaryVisibility').textContent = visibilityActual.toLocaleString();
+        document.getElementById('prSummaryOnlineSales').textContent = onlineSalesActual;
+        document.getElementById('prSummaryTargets').textContent = `${targetsAchieved}/7`;
+    }
+
+    // Helper functions
+    function getScoreClass(percentage) {
+        if (percentage >= 100) {
+            return 'score-excellent';
+        } else if (percentage >= 85) {
+            return 'score-good';
+        } else if (percentage >= 70) {
+            return 'score-average';
+        } else {
+            return 'score-poor';
+        }
+    }
+
+    function getPerformanceRating(score) {
+        if (score >= 100) {
+            return {ratingText: 'EXCELLENT', ratingClass: 'rating-excellent'};
+        } else if (score >= 85) {
+            return {ratingText: 'GOOD', ratingClass: 'rating-good'};
+        } else if (score >= 70) {
+            return {ratingText: 'AVERAGE', ratingClass: 'rating-average'};
+        } else if (score >= 50) {
+            return {ratingText: 'NEEDS IMPROVEMENT', ratingClass: 'rating-average'};
+        } else {
+            return {ratingText: 'POOR', ratingClass: 'rating-poor'};
+        }
+    }
+
+    function getScoreColor(score) {
+        if (score >= 100) return 'var(--success-green)';
+        if (score >= 85) return '#4caf50';
+        if (score >= 70) return 'var(--warning-orange)';
+        return '#f44336';
+    }
+
+    function formatCurrency(amount) {
+        if (amount >= 1000000000) {
+            return 'UGX ' + (amount / 1000000000).toFixed(2) + 'B';
+        } else if (amount >= 1000000) {
+            return 'UGX ' + (amount / 1000000).toFixed(1) + 'M';
+        } else if (amount >= 1000) {
+            return 'UGX ' + (amount / 1000).toFixed(0) + 'K';
+        }
+        return 'UGX ' + amount.toLocaleString();
+    }
+
+    function calculateAllScores() {
+        const dept = document.getElementById('department').value;
+        
+        if (dept === 'bd') {
+            calculateBDScores();
+        } else if (dept === 'sales') {
+            calculateSalesScores();
+        } else if (dept === 'pr') {
+            calculatePRScores();
+        }
+    }
+
+    function resetDashboard() {
+        if (confirm('Are you sure you want to reset all data? This cannot be undone.')) {
+            const inputs = document.querySelectorAll('.actual-input');
+            inputs.forEach(input => {
+                input.value = '';
+            });
+            document.getElementById('achievements').value = '';
+            document.getElementById('challenges').value = '';
+            document.getElementById('staffName').value = '';
+            document.getElementById('reportingMonth').value = 'March 2026';
+            document.getElementById('department').value = 'bd';
+            changeDepartment();
+        }
+    }
+
+    function exportToExcel() {
+        const staff = document.getElementById('staffName').value || 'Staff';
+        const month = document.getElementById('reportingMonth').value || 'Report';
+        const dept = document.getElementById('department').value;
+        const deptName = dept === 'bd' ? 'Business_Development' : dept === 'sales' ? 'Sales' : 'Public_Relations';
+        const wb = XLSX.utils.book_new();
+        
+        // Create data array
+        const data = [
+            ['KPI Performance Report - Samani Creations Ltd'],
+            ['Department:', deptName],
+            ['Staff:', document.getElementById('staffName').value],
+            ['Month:', document.getElementById('reportingMonth').value],
+            ['Date:', document.getElementById('autoDate').value],
+            [],
+            ['KPI', 'Target', 'Actual', 'Score %', 'Weight']
+        ];
+
+        let kpis = [];
+        let overallScore = '0%';
+        let performanceRating = 'N/A';
+
+        if (dept === 'bd') {
+            kpis = [
+                {name: 'Sales Revenue', target: 'UGX 300,000,000', actual: document.getElementById('bdSalesActual').value || '0', score: document.getElementById('bdSalesPct').textContent, weight: '25%'},
+                {name: 'New Projects', target: '5', actual: document.getElementById('bdProjectsActual').value || '0', score: document.getElementById('bdProjectsPct').textContent, weight: '20%'},
+                {name: 'Quotes/Tender Submitted', target: '50', actual: document.getElementById('bdQuotesActual').value || '0', score: document.getElementById('bdQuotesPct').textContent, weight: '10%'},
+                {name: 'Conversion Rate', target: '100%', actual: document.getElementById('bdConvActualDisplay').value || '0%', score: document.getElementById('bdConvPct').textContent, weight: '25%'},
+                {name: 'New Leads', target: '280', actual: document.getElementById('bdLeadsActual').value || '0', score: document.getElementById('bdLeadsPct').textContent, weight: '5%'},
+                {name: 'Showroom Sales', target: 'UGX 80,000,000', actual: document.getElementById('bdShowroomActual').value || '0', score: document.getElementById('bdShowroomPct').textContent, weight: '10%'},
+                {name: 'Partnerships', target: '5', actual: document.getElementById('bdPartnerActual').value || '0', score: document.getElementById('bdPartnerPct').textContent, weight: '5%'}
+            ];
+            overallScore = document.getElementById('bdTotalScore').textContent;
+            performanceRating = document.getElementById('bdPerformanceRating').textContent;
+        } else if (dept === 'sales') {
+            kpis = [
+                {name: 'Showroom Sales Achieved', target: '20', actual: document.getElementById('salesShowroomSales').value || '0', score: document.getElementById('salesShowroomSalesPct').textContent, weight: '25%'},
+                {name: 'Project Sales Achieved', target: '2', actual: document.getElementById('salesProjectSales').value || '0', score: document.getElementById('salesProjectSalesPct').textContent, weight: '20%'},
+                {name: 'Leads Generated', target: '80', actual: document.getElementById('salesLeadsGenerated').value || '0', score: document.getElementById('salesLeadsGeneratedPct').textContent, weight: '10%'},
+                {name: 'Showroom Walk-ins', target: '50', actual: document.getElementById('salesWalkins').value || '0', score: document.getElementById('salesWalkinsPct').textContent, weight: '10%'},
+                {name: 'Showroom Conversion Rate', target: '100%', actual: document.getElementById('salesConversionDisplay').value || '0%', score: document.getElementById('salesConversionPct').textContent, weight: '20%'},
+                {name: 'Quotations/Tender Issued', target: '20', actual: document.getElementById('salesQuotations').value || '0', score: document.getElementById('salesQuotationsPct').textContent, weight: '15%'}
+            ];
+            overallScore = document.getElementById('salesTotalScore').textContent;
+            performanceRating = document.getElementById('salesPerformanceRating').textContent;
+        } else if (dept === 'pr') {
+            kpis = [
+                {name: 'Brand Visibility', target: '15,000', actual: document.getElementById('prBrandVisibility').value || '0', score: document.getElementById('prBrandVisibilityPct').textContent, weight: '20%'},
+                {name: 'Digital Marketing', target: '5', actual: document.getElementById('prDigitalMarketing').value || '0', score: document.getElementById('prDigitalMarketingPct').textContent, weight: '10%'},
+                {name: 'Online Sales Achieved', target: '30', actual: document.getElementById('prOnlineSales').value || '0', score: document.getElementById('prOnlineSalesPct').textContent, weight: '25%'},
+                {name: 'Showroom Walk-ins', target: '100', actual: document.getElementById('prWalkins').value || '0', score: document.getElementById('prWalkinsPct').textContent, weight: '15%'},
+                {name: 'Administrative Tasks', target: '15', actual: document.getElementById('prAdminTasks').value || '0', score: document.getElementById('prAdminTasksPct').textContent, weight: '15%'},
+                {name: 'Social Media Posts', target: '50', actual: document.getElementById('prSocialMediaPosts').value || '0', score: document.getElementById('prSocialMediaPostsPct').textContent, weight: '10%'},
+                {name: 'Boosts, Ads & Promotions', target: '5', actual: document.getElementById('prBoostsAds').value || '0', score: document.getElementById('prBoostsAdsPct').textContent, weight: '5%'}
+            ];
+            overallScore = document.getElementById('prTotalScore').textContent;
+            performanceRating = document.getElementById('prPerformanceRating').textContent;
+        }
+
+        kpis.forEach(kpi => {
+            data.push([kpi.name, kpi.target, kpi.actual, kpi.score, kpi.weight]);
+        });
+
+        data.push(
+            [],
+            ['Overall Performance Score:', '', '', overallScore, ''],
+            ['Performance Rating:', '', '', performanceRating, '']
+        );
+
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, ws, "KPI Report");
+        XLSX.writeFile(wb, `Samani_KPI_${deptName}_${staff}_${month.replace(/\s+/g, '_')}.xlsx`);
+    }
+
+    async function exportToPDF() {
+        const { jsPDF } = window.jspdf;
+        const element = document.getElementById('kpi-content');
+        const buttons = document.querySelector('.action-buttons');
+        
+        buttons.style.display = 'none';
+        
+        html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff'
+        }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            
+            const staff = document.getElementById('staffName').value || 'Staff';
+            const dept = document.getElementById('department').value;
+            const deptName = dept === 'bd' ? 'Business_Development' : dept === 'sales' ? 'Sales' : 'Public_Relations';
+            const month = document.getElementById('reportingMonth').value.replace(/\s+/g, '_') || 'Report';
+            pdf.save(`Samani_KPI_${deptName}_${staff}_${month}.pdf`);
+            
+            buttons.style.display = 'flex';
+        });
+    }
+
+    // Initialize
+    setupEventListeners();
+    calculateAllScores();
+</script>
+
+</body>
+</html>
